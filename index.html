@@ -5,13 +5,195 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flappy Bird</title>
     <style>
-        body { text-align: center; background: #70c5ce; }
-        canvas { background: #fff; border: 1px solid black; }
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #70c5ce;
+        }
+        canvas {
+            background: url('background.png') repeat-x;
+            display: block;
+        }
+        #startButton, #restartButton {
+            position: absolute;
+            background: yellow;
+            color: black;
+            font-size: 24px;
+            padding: 15px 30px;
+            border: 3px solid black;
+            border-radius: 10px;
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+        #startButton {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #restartButton {
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px #000;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <h2>Flappy Bird</h2>
     <canvas id="gameCanvas" width="320" height="480"></canvas>
-    <script src="game.js"></script>
+    <div id="countdown"></div>
+    <button id="startButton">Start</button>
+    <button id="restartButton">Restart</button>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Загрузка изображений
+        const birdImg = new Image();
+        const bgImg = new Image();
+        const fgImg = new Image();
+        const pipeUpImg = new Image();
+        const pipeDownImg = new Image();
+
+        birdImg.src = "bird.png"; // Ваша кастомная моделька птицы
+        bgImg.src = "background.png";
+        fgImg.src = "ground.png";
+        pipeUpImg.src = "pipeUp.png"; // Ваши кастомные столбики
+        pipeDownImg.src = "pipeDown.png";
+
+        // Звуковые эффекты
+        const flySound = new Audio();
+        const scoreSound = new Audio();
+
+        flySound.src = "fly.mp3";
+        scoreSound.src = "score.mp3";
+
+        // Переменные
+        let birdX = 50;
+        let birdY = 150;
+        let gravity = 1.5;
+        let lift = -25;
+        let velocity = 0;
+        let score = 0;
+        let pipes = [];
+        let gameStarted = false;
+        let gameOver = false;
+        let countdown = 3;
+
+        // Позиция земли
+        const fgY = canvas.height - fgImg.height;
+
+        // Добавление первого столбика
+        pipes[0] = {
+            x: canvas.width,
+            y: 0
+        };
+
+        // Функция для начала игры
+        function startGame() {
+            document.getElementById("startButton").style.display = "none";
+            document.getElementById("countdown").style.display = "block";
+            countdownStart();
+        }
+
+        // Функция для рестарта игры
+        function restartGame() {
+            location.reload();
+        }
+
+        // Функция для отсчёта перед началом игры
+        function countdownStart() {
+            if (countdown > 0) {
+                document.getElementById("countdown").innerText = countdown;
+                countdown--;
+                setTimeout(countdownStart, 1000);
+            } else {
+                document.getElementById("countdown").style.display = "none";
+                gameStarted = true;
+                draw();
+            }
+        }
+
+        // Функция для прыжка птицы
+        function jump() {
+            if (gameStarted && !gameOver) {
+                velocity = lift;
+                flySound.play();
+            }
+        }
+
+        // Обработчики событий
+        document.addEventListener("keydown", function(event) {
+            if (event.code === "Space") {
+                jump();
+            }
+        });
+        canvas.addEventListener("click", jump);
+
+        // Основная функция отрисовки
+        function draw() {
+            ctx.drawImage(bgImg, 0, 0);
+
+            for (let i = 0; i < pipes.length; i++) {
+                let constant = pipeUpImg.height + 90;
+                ctx.drawImage(pipeUpImg, pipes[i].x, pipes[i].y);
+                ctx.drawImage(pipeDownImg, pipes[i].x, pipes[i].y + constant);
+
+                pipes[i].x--;
+
+                if (pipes[i].x === 125) {
+                    pipes.push({
+                        x: canvas.width,
+                        y: Math.floor(Math.random() * pipeUpImg.height) - pipeUpImg.height
+                    });
+                }
+
+                // Обнаружение столкновений
+                if (birdX + birdImg.width >= pipes[i].x && birdX <= pipes[i].x + pipeUpImg.width &&
+                    (birdY <= pipes[i].y + pipeUpImg.height || birdY + birdImg.height >= pipes[i].y + constant) ||
+                    birdY + birdImg.height >= fgY) {
+                    gameOver = true;
+                    document.getElementById("restartButton").style.display = "block";
+                }
+
+                if (pipes[i].x === 5) {
+                    score++;
+                    scoreSound.play();
+                }
+            }
+
+            ctx.drawImage(fgImg, 0, fgY);
+
+            ctx.drawImage(birdImg, birdX, birdY);
+
+            velocity += gravity;
+            birdY += velocity;
+
+            ctx.fillStyle = "#000";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, canvas.height - 20);
+
+            if (!gameOver) {
+                requestAnimationFrame(draw);
+            }
+        }
+
+        document.getElementById("startButton").addEventListener("click", startGame);
+        document.getElementById("restartButton").addEventListener("click", restartGame);
+    </script>
 </body>
 </html>
