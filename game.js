@@ -15,25 +15,26 @@ pipeUp.src = "pipeUp.png";
 pipeDown.src = "pipeDown.png";
 
 // Позиция птицы
-let x = 50, y = 150, gravity = 0.5, velocity = 0;
-let gameStarted = false, gameReady = false, countdown = 3;
-const jump = () => { if (gameStarted) velocity = -8; };
+let x = 50, y = 150, gravity = 0.4, velocity = 0, lift = -8;
+let gameStarted = false, countdown = 3;
+let pipes = [], pipeGap = 90, score = 0;
+
+function jump() {
+    if (gameStarted) {
+        velocity = lift;
+    }
+}
 
 document.addEventListener("keydown", jump);
 canvas.addEventListener("click", jump);
 
-// Генерация труб
-const pipes = [];
-const pipeGap = 90;
-let score = 0;
-
 function spawnPipe() {
-    pipes.push({ x: canvas.width, y: Math.random() * 200 - 200 });
+    let pipeY = Math.random() * 200 - 200;
+    pipes.push({ x: canvas.width, y: pipeY });
 }
 
 function draw() {
-    ctx.drawImage(bg, 0, 0);
-    
+    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     pipes.forEach((pipe, index) => {
         ctx.drawImage(pipeUp, pipe.x, pipe.y);
         ctx.drawImage(pipeDown, pipe.x, pipe.y + pipeUp.height + pipeGap);
@@ -46,7 +47,7 @@ function draw() {
 
         if (x + bird.width >= pipe.x && x <= pipe.x + pipeUp.width &&
             (y <= pipe.y + pipeUp.height || y + bird.height >= pipe.y + pipeUp.height + pipeGap)) {
-            location.reload();
+            resetGame();
         }
     });
 
@@ -56,16 +57,15 @@ function draw() {
 
     ctx.drawImage(ground, 0, canvas.height - ground.height);
     ctx.drawImage(bird, x, y);
-    
+
     if (gameStarted) {
         velocity += gravity;
         y += velocity;
-        if (y + bird.height >= canvas.height - ground.height) location.reload();
+        if (y + bird.height >= canvas.height - ground.height) resetGame();
         ctx.fillStyle = "#000";
         ctx.font = "30px Arial";
         ctx.fillText("Score: " + score, 10, 40);
     }
-    
     requestAnimationFrame(draw);
 }
 
@@ -82,6 +82,10 @@ function startCountdown() {
         gameStarted = true;
         draw();
     }
+}
+
+function resetGame() {
+    location.reload();
 }
 
 // Кнопка Start
